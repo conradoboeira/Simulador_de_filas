@@ -4,7 +4,7 @@
     "Filas" : [
         {   
             "Nome" : "fila_do_caixa", 
-            "Comportamento":"G/G/1/5",
+            "Comportamento":"G/G/2/5",
             "Tempo de Chegada" : "2/4",
             "Tempo de Atendimento" : "3/5"
         }

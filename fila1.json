@@ -1,0 +1,14 @@
+{
+    "Tempo Inicio" : 2.0,
+    "Fila de Entrada" : "fila_do_caixa",
+    "Filas" : [
+        {   
+            "Nome" : "fila_do_caixa", 
+            "Comportamento":"G/G/1/5",
+            "Tempo de Chegada" : "2/4",
+            "Tempo de Atendimento" : "3/5"
+        }
+    ],
+    "Tempo de Execucao" : 1714360.1679
+    
+}
