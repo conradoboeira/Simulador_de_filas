@@ -1,3 +1,7 @@
+# Simulador de Filas
+# Autores: Conrado Boeira e Guilherme Maurer
+
+
 import json
 from queue import PriorityQueue
 import sys
@@ -5,7 +9,7 @@ import sys
 A = 2 ** 64
 C = 7
 M = 10000
-SEED = 7
+SEED = 1
 
 class Fila:
   def __init__(self, nome, capacidade, servidores,
@@ -18,7 +22,7 @@ class Fila:
     self.tempo_min_servidor = tempo_min_servidor
     self.tempo_max_chegada = tempo_max_chegada
     self.tempo_min_chegada = tempo_min_chegada
-    self.tempo = {"total" : 0.0}
+    self.tempo = {"total" : 0.0, "total_acumulado" : 0.0}
     self.ocupacao = 0
     self.perda=perda
 
@@ -90,7 +94,6 @@ def saida(tempo_atual, agenda, fila, random_nums):
 
 
 def main(file_name):
-    random_nums = random_gen(SEED)
     filas = []
     agenda = PriorityQueue() # (tempo, oque, onde) = (2.52, saida, fila1)
 
@@ -121,31 +124,43 @@ def main(file_name):
     agenda.put((data["Tempo Inicio"], "chegada", data["Fila de Entrada"]))
 
     print("SIMULANDO")
-    while True:
-        evento = agenda.get()
-        if(evento[1] == "chegada"):
-            chegada(evento[0], agenda, filas[0], random_nums)
-        elif(evento[1] == "saida"):
-            saida(evento[0], agenda, filas[0], random_nums)
-        if (filas[0].tempo["total"] >= data["Tempo de Execucao"]):
-            break
+    for i in range(1,6):
+        global SEED
+        SEED = i
+        random_nums = random_gen(SEED)
+        print("Simulacao com seed {}".format(SEED))
+        while True:
+            evento = agenda.get()
+            if(evento[1] == "chegada"):
+                chegada(evento[0], agenda, filas[0], random_nums)
+            elif(evento[1] == "saida"):
+                saida(evento[0], agenda, filas[0], random_nums)
+            if (filas[0].tempo["total"] >= data["Tempo de Execucao"]):
+                break
+        filas[0].ocupacao = 0
+        filas[0].tempo["total_acumulado"] += filas[0].tempo["total"]
+        filas[0].tempo["total"] = 0
+        agenda = PriorityQueue()
+        agenda.put((data["Tempo Inicio"], "chegada", data["Fila de Entrada"]))
+
 
     # Parse output
     for fila in filas:
+        print("\n-----------------------------------\n")
         print("Fila " + fila.nome)
         print("Comportamento: G/G/{}/{}".format(fila.servidores, fila.capacidade))
         print("Tempo de chegada: {}..{}".format(fila.tempo_min_chegada, fila.tempo_max_chegada))
-        print("Tempo de serviço: {}..{}".format(fila.tempo_min_servidor, fila.tempo_max_servidor))
-        print('Estado      Tempo      Probabilidade')
+        print("Tempo de servico: {}..{}".format(fila.tempo_min_servidor, fila.tempo_max_servidor))
+        print('\nEstado      Tempo      Probabilidade')
 
-        total = fila.tempo["total"]
+        total = fila.tempo["total_acumulado"]
         max_ocupacao = find_max_ocupacao(fila.tempo)
         for i in range(max_ocupacao + 1):
             print("{}  {}  {:.2f}%".format(i, fila.tempo[i],(fila.tempo[i]/float(total))*100))
 
 
-        print("Número de clientes perdidos: " + str(fila.perda))
-
+        print("\nNumero de clientes perdidos: " + str(fila.perda))
+        print("Tempo de execucao: {}".format(data["Tempo de Execucao"]))
 
 
 

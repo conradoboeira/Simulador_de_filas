@@ -1,0 +1,22 @@
+SIMULANDO
+Simulacao com seed 1
+Simulacao com seed 2
+Simulacao com seed 3
+Simulacao com seed 4
+Simulacao com seed 5
+
+-----------------------------------
+
+Fila fila_do_caixa
+Comportamento: G/G/2/5
+Tempo de chegada: 2.0..4.0
+Tempo de servico: 3.0..5.0
+
+Estado      Tempo      Probabilidade
+0  10196.206620667332  1.36%
+1  479192.57375733845  63.88%
+2  259007.64376438098  34.53%
+3  1796.4045404585788  0.24%
+
+Numero de clientes perdidos: 0
+Tempo de execucao: 150037.6576

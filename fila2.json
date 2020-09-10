@@ -1,5 +1,5 @@
 {
-    "Tempo Inicio" : 2.0,
+    "Tempo Inicio" : 3.0,
     "Fila de Entrada" : "fila_do_caixa",
     "Filas" : [
         {   
@@ -9,6 +9,6 @@
             "Tempo de Atendimento" : "3/5"
         }
     ],
-    "Tempo de Execucao" : 1500122.3603 
+    "Tempo de Execucao" : 150037.6576 
     
 }
