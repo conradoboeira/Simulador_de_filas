@@ -22,6 +22,7 @@ class Fila:
     self.ocupacao = 0
     self.perda=perda
 
+# Gerador de numeros aleatorios
 def random_gen(seed):
     last_num = seed
     while( True ):
@@ -93,6 +94,7 @@ def main(file_name):
     filas = []
     agenda = PriorityQueue() # (tempo, oque, onde) = (2.52, saida, fila1)
 
+    # Parse Input
     with open(file_name, 'r') as json_file:
         data = json.load(json_file)
         for fila in data["Filas"]:
@@ -115,6 +117,7 @@ def main(file_name):
                         float(max_chegada), float(min_chegada))
             filas.append(nova_fila)
 
+    # Agenda o primeiro evento
     agenda.put((data["Tempo Inicio"], "chegada", data["Fila de Entrada"]))
 
     print("SIMULANDO")
