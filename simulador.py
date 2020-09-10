@@ -124,9 +124,9 @@ def main(file_name):
     agenda.put((data["Tempo Inicio"], "chegada", data["Fila de Entrada"]))
 
     print("SIMULANDO")
-    for i in range(1,6):
+    for s in data["Seeds"]:
         global SEED
-        SEED = i
+        SEED = int(s)
         random_nums = random_gen(SEED)
         print("Simulacao com seed {}".format(SEED))
         while True:
