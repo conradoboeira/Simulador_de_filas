@@ -6,6 +6,7 @@ import json
 from queue import PriorityQueue
 import sys
 
+# Variaveis para a geracao de numeros aleatorios
 A = 2 ** 64
 C = 7
 M = 10000
