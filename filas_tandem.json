@@ -1,0 +1,21 @@
+{
+    "Tempo Inicio" : 2.5,
+    "Fila de Entrada" : "fila1",
+    "Filas" : [
+        {   
+            "Nome" : "fila1", 
+            "Comportamento":"G/G/2/3",
+            "Tempo de Chegada" : "2/3",
+            "Tempo de Atendimento" : "2/5"
+        },
+        {   
+            "Nome" : "fila2", 
+            "Comportamento":"G/G/1/3",
+            "Tempo de Atendimento" : "3/5"
+        }
+    ],
+    "Rede" : [ "fila1/fila2"],
+    "Seeds" :[1,2,3,4,5],
+    "Tempo de Execucao" : 95223.9420
+    
+}

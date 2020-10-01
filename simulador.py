@@ -5,12 +5,19 @@
 import json
 from queue import PriorityQueue
 import sys
+from prettytable import PrettyTable
 
 # Variaveis para a geracao de numeros aleatorios
 A = 2 ** 64
 C = 7
 M = 10000
 SEED = 1
+
+# Variaveis de controle das filas
+filas = []
+rede = {}
+agenda = PriorityQueue() # (tempo, oque, onde) = (2.52, saida, fila1)
+
 
 class Fila:
   def __init__(self, nome, capacidade, servidores,
@@ -46,15 +53,39 @@ def find_max_ocupacao(tempo):
                 max_ocupacao = t
     return max_ocupacao
 
-def chegada(tempo_atual, agenda, fila, random_nums):
+def contabiliza_tempo(tempo_atual):
+    for fila in filas:
+        if(fila.ocupacao in fila.tempo):
+            fila.tempo[fila.ocupacao] += tempo_atual - fila.tempo["total"]
+        else:
+            fila.tempo[fila.ocupacao] = tempo_atual - fila.tempo["total"]
+
+        fila.tempo["total"] = tempo_atual
+
+def get_anterior(fila):
+    for key in rede:
+        if(rede[key] == fila): return key
+    return None
+
+def get_fila(nome):
+    for fila in filas:
+        if(fila.nome == nome): return fila
+    return None
+
+def chegada(tempo_atual, fila, random_nums):
 
     # Contabiliza tempo
-    if(fila.ocupacao in fila.tempo):
-        fila.tempo[fila.ocupacao] += tempo_atual - fila.tempo["total"]
-    else:
-        fila.tempo[fila.ocupacao] = tempo_atual - fila.tempo["total"]
+    contabiliza_tempo(tempo_atual)
 
-    fila.tempo["total"] = tempo_atual
+    anterior = get_anterior(fila.nome)
+    if(anterior):
+        fila_anterior = get_fila(anterior)
+        fila_anterior.ocupacao -= 1
+        if(fila_anterior.ocupacao >= fila_anterior.servidores):
+            proximo_tempo =  tempo_atual + conversor_base(next(random_nums), fila_anterior.tempo_min_servidor, fila_anterior.tempo_max_servidor)
+            tempo_atual = proximo_tempo
+            agenda.put((proximo_tempo, "chegada", fila.nome))
+
 
     # se fila < capacidade
     #     fila ++
@@ -65,23 +96,23 @@ def chegada(tempo_atual, agenda, fila, random_nums):
         fila.ocupacao +=1
         if fila.ocupacao <= fila.servidores:
             proximo_tempo =  tempo_atual + conversor_base(next(random_nums), fila.tempo_min_servidor, fila.tempo_max_servidor)
-            agenda.put((proximo_tempo, "saida", fila.nome))
+            # Checa se ela tem uma conexao na saida com outra fila
+            if(fila.nome in rede):
+                agenda.put((proximo_tempo, "chegada", rede[fila.nome]))
+            else:
+                agenda.put((proximo_tempo, "saida", fila.nome))
     else:
         fila.perda+=1
 
-    # agenda chegada( t +rnd)
-    proximo_tempo =  tempo_atual + conversor_base(next(random_nums),fila.tempo_min_chegada,fila.tempo_max_chegada)
-    agenda.put((proximo_tempo, "chegada", fila.nome))
+    if(not anterior):
+        # agenda chegada( t +rnd)
+        proximo_tempo =  tempo_atual + conversor_base(next(random_nums),fila.tempo_min_chegada,fila.tempo_max_chegada)
+        agenda.put((proximo_tempo, "chegada", fila.nome))
 
-def saida(tempo_atual, agenda, fila, random_nums):
+def saida(tempo_atual, fila, random_nums):
 
     # Contabiliza tempo
-    if(fila.ocupacao in fila.tempo):
-        fila.tempo[fila.ocupacao] += tempo_atual - fila.tempo["total"]
-    else:
-        fila.tempo[fila.ocupacao] = tempo_atual - fila.tempo["total"]
-
-    fila.tempo["total"] = tempo_atual
+    contabiliza_tempo(tempo_atual)
 
     # Fila --
     # Se fila  > =1
@@ -95,9 +126,6 @@ def saida(tempo_atual, agenda, fila, random_nums):
 
 
 def main(file_name):
-    filas = []
-    agenda = PriorityQueue() # (tempo, oque, onde) = (2.52, saida, fila1)
-
     # Parse Input
     with open(file_name, 'r') as json_file:
         data = json.load(json_file)
@@ -120,8 +148,12 @@ def main(file_name):
                         float(max_atendimento), float(min_atendimento),
                         float(max_chegada), float(min_chegada))
             filas.append(nova_fila)
+        for conexao in data["Rede"]:
+            fila1, fila2 = conexao.split(r"/")
+            rede[fila1] = fila2
 
     # Agenda o primeiro evento
+    global agenda
     agenda.put((data["Tempo Inicio"], "chegada", data["Fila de Entrada"]))
 
     print("SIMULANDO")
@@ -133,14 +165,17 @@ def main(file_name):
         while True:
             evento = agenda.get()
             if(evento[1] == "chegada"):
-                chegada(evento[0], agenda, filas[0], random_nums)
+                chegada(evento[0], get_fila(evento[2]), random_nums)
             elif(evento[1] == "saida"):
-                saida(evento[0], agenda, filas[0], random_nums)
+                saida(evento[0], get_fila(evento[2]), random_nums)
             if (filas[0].tempo["total"] >= data["Tempo de Execucao"]):
                 break
-        filas[0].ocupacao = 0
-        filas[0].tempo["total_acumulado"] += filas[0].tempo["total"]
-        filas[0].tempo["total"] = 0
+
+        # Limpa as filas para a proxima execucao
+        for fila in filas:
+            fila.ocupacao = 0
+            fila.tempo["total_acumulado"] += fila.tempo["total"]
+            fila.tempo["total"] = 0
         agenda = PriorityQueue()
         agenda.put((data["Tempo Inicio"], "chegada", data["Fila de Entrada"]))
 
@@ -150,18 +185,42 @@ def main(file_name):
         print("\n-----------------------------------\n")
         print("Fila " + fila.nome)
         print("Comportamento: G/G/{}/{}".format(fila.servidores, fila.capacidade))
-        print("Tempo de chegada: {}..{}".format(fila.tempo_min_chegada, fila.tempo_max_chegada))
+        if(fila.tempo_min_chegada != -1 and fila.tempo_max_chegada):
+            print("Tempo de chegada: {}..{}".format(fila.tempo_min_chegada, fila.tempo_max_chegada))
         print("Tempo de servico: {}..{}".format(fila.tempo_min_servidor, fila.tempo_max_servidor))
-        print('\nEstado      Tempo      Probabilidade')
+        #print('\nEstado      Tempo      Probabilidade')
 
         total = fila.tempo["total_acumulado"]
         max_ocupacao = find_max_ocupacao(fila.tempo)
+        tabela = PrettyTable()
+        tabela.field_names = ["Estado","Tempo","Probabilidade"]
+        probs = [] # lista de probabilidades, usado depois no calculo das metricas
         for i in range(max_ocupacao + 1):
-            print("{}  {}  {:.2f}%".format(i, fila.tempo[i],(fila.tempo[i]/float(total))*100))
+            #print("{}  {}  {:.2f}%".format(i, fila.tempo[i],(fila.tempo[i]/float(total))*100))
+            tabela.add_row([i,fila.tempo[i],(fila.tempo[i]/float(total))*100])
+            probs.append(fila.tempo[i]/float(total))
+        print()
+        print(tabela)
+
+        # Programacao Funcional
+        pop_media = sum([i*probs[i] for i in range(len(probs))])
+        mu = 60/((fila.tempo_min_servidor + fila.tempo_max_servidor)/2)
+        mu_i = [min(i,fila.servidores)*mu for i in range(max_ocupacao+1)]
+        vazao = sum([p*m for p,m in zip(probs,mu_i)])
+        utilizacao = sum([(min(i,fila.servidores)/fila.servidores)*probs[i] for i in range(len(probs))])
+        tempo_resp = pop_media/vazao
+
+        print("\nEstatisticas")
+        print("Numero de clientes perdidos: " + str(fila.perda))
+        print("Populacao media: " + str(pop_media))
+        print("Vazao: " + str(vazao))
+        print("Utilizacao: " + str(utilizacao))
+        print("Tempo de resposta: " + str(tempo_resp))
 
 
-        print("\nNumero de clientes perdidos: " + str(fila.perda))
-        print("Tempo de execucao: {}".format(data["Tempo de Execucao"]))
+
+    print("\n-----------------------------------\n")
+    print("Tempo total de execucao: {}".format(data["Tempo de Execucao"]))
 
 
 
@@ -170,3 +229,4 @@ if __name__ == "__main__":
     if(len(sys.argv) != 2):
         print('Uso python3 simulador.py <file>')
     main(sys.argv[1])
+
